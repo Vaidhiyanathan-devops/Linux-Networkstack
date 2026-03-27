@@ -1,0 +1,38 @@
+Since we are stepping away from Kubernetes and looking at a "Classic" Linux Data Center (DC) with Virtual Machines (VMs), we lose the "magic" of the Kubernetes Control Plane. In a Linux VM environment, traffic mirroring and splitting are handled at the Network Edge or via a Local Proxy.
+
+Here is how you achieve those "Smooth" transitions in a traditional Linux setup:
+
+1. The "Traffic Splitter" (The Load Balancer)
+In a VM setup, you don't change "selectors." You have a Load Balancer (LB)—like HAProxy, Nginx, or an F5 Big-IP—sitting in front of your App VMs.
+
+How it Splits: You define "Backends" in your LB config.
+
+Group A (Blue): 5 VMs running v1.0.
+
+Group B (Green): 5 VMs running v1.1.
+
+The Cutover: To do a Canary, you simply change the weights in the config.
+
+server app_v1 10.0.0.1:80 weight 90
+
+server app_v2 10.0.0.2:80 weight 10
+
+Zero Downtime: When you reload HAProxy or Nginx (systemctl reload), it performs a graceful reload. It finishes old connections on the old config while starting new ones on the new weighted config.
+
+2. Traffic Mirroring (Shadowing)
+In a pure Linux environment, you have two main ways to "copy" traffic to a test VM without affecting the user:
+
+Nginx mirror module: You can configure your Nginx entry point to "duplicate" incoming requests and send them to a separate "Green" VM. The main user gets the response from "Blue," and the "Green" response is simply discarded by Nginx.
+
+Linux tc (Traffic Control): This is the "Hardcore" way. You use the Linux kernel's tc tool to mirror packets at the network interface level (eth0) to another interface or IP.
+
+Bash
+# Example: Mirroring all traffic from eth0 to eth1
+tc qdisc add dev eth0 handle 1: root prio
+tc filter add dev eth0 parent 1: protocol ip u32 match u32 0 0 action mirred egress mirror dev eth1
+3. Backhaul and Cutover Risks
+In a DC, the "Backhaul" usually refers to the traffic returning to your core network or database.
+
+The Risk: If you switch 100% of traffic from Blue VMs to Green VMs (Blue-Green), and the Green VMs have a misconfigured network route (backhaul), your app will hang.
+
+The Solution: You use VIP (Virtual IP) Swapping. You keep both sets of VMs running. You move a "Floating IP" (using something like Keepalived) from the Blue LB to the Green LB.
