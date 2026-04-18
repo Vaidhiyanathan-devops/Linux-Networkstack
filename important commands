@@ -1,0 +1,26 @@
+1. dpkg -S
+2. apt policy 
+3. vimdiff
+4. dpkg-deb 
+5. ldd
+6. /etc/ld.conf
+7. lsof  
+Important Linux command
+======================
+
+find /* -iname "*kubernetes*" -type f
+strace -f -e trace=all -o output.log -s 1024 <your_command> <args>
+tcpdump -i cni0 host 10.244.0.29 -nn
+dpkg -S , apt policy , apt update -y
+sha256sum <file>
+file <file_name>
+stat <file_name>
+vmstat
+iostat
+sar -ru
+ip -s link
+sudo tetra getevents -o compact ( tetragon eBPF )
+strace -p <ipd>
+strace -c <command> -> list of syscalls by command
+
+
